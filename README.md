@@ -70,8 +70,23 @@ fact is missing. You don't need to manually copy session IDs or export logs.
   baseline. Uncached input tokens rose slightly. The previous implementation
   was also tested alongside them and exhausted its tool-call budget in one task.
 
-These small, workload-specific results aren't a general performance guarantee;
-conversation-lifetime tool overhead was not measured.
+- **Broader lifecycle experiment:** eight tasks across four scenarios, including
+  eight-hop reconstruction, superseded user decisions, and changed source files.
+  History was enabled from the initial investigation, not just the follow-up.
+  It recovered **80/80 fields vs 48/80** without history; baseline honestly returned
+  unknown for 32 unreconstructable fields, with **no wrong claims in either arm**.
+  Both verified current values correctly. Across the measured conversations,
+  history used **84 vs 120 model calls** and estimated **$1.85 vs $2.44**.
+  However, the user-decision category cost **$0.70 vs $0.45**, driven by one
+  expensive initial investigation. More information recovered does not always
+  mean cheaper work.
+
+These small, synthetic results aren't a general performance guarantee. The first
+experiments measured follow-ups only; the latest includes model usage from the
+start, but only one compaction and two repetitions per scenario. Controlled
+omission does not establish how often natural compaction loses useful details.
+The strongest demonstrated use case is recovering specific earlier evidence
+that current files cannot reconstruct—not indiscriminate history browsing.
 [Benchmark method, limitations, diagnostics, and aggregate evidence](bench/README.md).
 
 Installation and the full technical reference are below.

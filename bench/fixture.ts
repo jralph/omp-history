@@ -34,21 +34,35 @@ export function fixture(seed: string, shards = 32, rows = 64) {
 	};
 }
 
-export async function writeFixture(root: string, data: ReturnType<typeof fixture>) {
+export async function writeFixture(root: string, data: { files: Record<string, string> }) {
 	await mkdir(join(root, "sources"), { recursive: true });
 	await Promise.all(Object.entries(data.files).map(([name, text]) => writeFile(join(root, name), text)));
 }
 
-export function score(text: string, gold: Facts) {
-	let parsed: Record<string, unknown> = {};
+function parseAnswer(text: string): Record<string, unknown> | undefined {
 	try {
-		parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-	} catch { /* An unparseable answer earns no exact-match credit. */ }
-	const correct = keys.filter(key => parsed?.[key] === gold[key]);
-	return { correct: correct.length, total: keys.length, allCorrect: correct.length === keys.length };
+		const value = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+		return value && typeof value === "object" && !Array.isArray(value) ? value : undefined;
+	} catch { return undefined; }
+}
+export function score(text: string, gold: Record<string, string>) {
+	const parsed = parseAnswer(text), fields = Object.keys(gold);
+	const correct = fields.filter(key => parsed?.[key] === gold[key]);
+	return { correct: correct.length, total: fields.length, allCorrect: correct.length === fields.length };
+}
+export function assess(text: string, gold: Record<string, string>) {
+	const parsed = parseAnswer(text);
+	let correct = 0, unknown = 0, incorrectClaims = 0, missing = 0;
+	for (const key of Object.keys(gold)) {
+		if (!parsed || !Object.hasOwn(parsed, key)) missing++;
+		else if (parsed[key] === gold[key]) correct++;
+		else if (parsed[key] === null) unknown++;
+		else incorrectClaims++;
+	}
+	return { validJson: parsed !== undefined, correct, unknown, incorrectClaims, missing };
 }
 
-export function missingFacts(context: unknown, gold: Facts) {
+export function missingFacts(context: unknown, gold: Record<string, string>) {
 	const text = JSON.stringify(context);
-	return keys.filter(key => !text.includes(gold[key]));
+	return Object.keys(gold).filter(key => !text.includes(gold[key]!));
 }

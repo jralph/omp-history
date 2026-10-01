@@ -85,16 +85,67 @@ can leave a private `omp-history-bench-*` directory under the system temp direct
 remove it rather than publishing it. Only aggregate reports are exported;
 `bench-results/` is ignored. Do not commit temporary sessions, logs or credentials.
 
-Each model phase times out and stops at more than 16 tool calls or 18 completed
-model messages. The run aborts above $5 of reported catalog-estimated cost,
+Each model phase times out and stops above `--max-tool-calls` requested tool
+calls (default 16; configurable 16–48) or that cap plus two completed model
+messages. The run aborts above $5 of reported catalog-estimated cost,
 checked **after** completed calls. This is not a hard billing cap; in-flight work,
 provider billing and incomplete usage reports can exceed estimates. Prompt
-caching remains enabled and cached tokens are reported separately. History tools
-are disabled in the shared seed investigation: these comparisons measure
-post-compaction follow-ups, **not total conversation-lifetime overhead**. Keeping
-the tools always enabled before compaction could erase the small estimated
-cost saving observed below. Elapsed time
-excludes process startup and includes response collection.
+caching remains enabled and cached tokens are reported separately. In default
+`--scope followup` mode, history is disabled in the shared seed investigation:
+those comparisons do **not** measure conversation-lifetime overhead. In
+`--scope lifecycle`, independent investigations load each condition's tools from
+the start and their usage is included. `elapsedMs` measures model phases (plus
+compaction in lifecycle sums), excluding process startup; lifecycle
+`wallElapsedMs` additionally includes fixture preparation and process launches.
+
+## Mixed scenarios and lifecycle measurement
+
+```bash
+bun run bench --model openai-codex/gpt-5.5 --suite mixed-v2 \
+  --scope lifecycle --trials 2 --max-tool-calls 32 --dry-run
+
+# Explicitly paid/quota-consuming; two repetitions × four cases × two conditions
+bun run bench --model openai-codex/gpt-5.5 --suite mixed-v2 \
+  --scope lifecycle --trials 2 --max-tool-calls 32 --timeout-seconds 240 \
+  --allow-model-calls --output bench-results/mixed-lifecycle.json
+```
+
+`--suite linked-registry-v1` and `--scope followup` remain defaults, preserving
+old workload prompts. In `mixed-v2`, `--trials` means repetitions of **each** case:
+
+- **Cheap control:** the original four linked records, eight values.
+- **Deep reconstruction:** eight dependent records across 256 shards, about
+  1.38 MB, with one answer value per record.
+- **User decision:** actual model-generated draft investigation, then a second
+  user turn superseding all eight values with approved values absent from files.
+  The model acknowledges them; both draft and approval remain in visible history.
+- **Changed source:** after compaction the harness updates all eight target
+  values in the fixture. The final answer must distinguish eight historical
+  values from eight current values. No filesystem history/backup is available.
+
+No answers are included in the follow-up. The latter two cases allow explicit
+JSON `null` for unestablishable values. All mixed cases use that same uncertainty
+instruction; grading separates exact values, explicit unknowns, wrong non-null
+values, missing fields, and malformed JSON. An honest unknown is **not** called
+a false claim. Historical/current groups are graded separately.
+
+Lifecycle mode investigates independently for each condition on identical
+fixtures, checks every seed phase against its own gold, compacts, and verifies
+all historical target strings are absent. Initial tool choices/outputs can vary;
+this is not the original identical-seed experiment. History declarations are
+present throughout its setup. Both restart into fresh isolated RPC clients after
+compaction, verifying restored context against their own saved context, to avoid
+unmeasured in-memory provider continuation. Setup, compaction and follow-up
+metrics are exported separately; `lifecycle` sums them **once**. Comparison order
+rotates by repetition, so each case is counterbalanced over two conditions/two
+repetitions. `mixed-v2 --scope followup` instead shares a verified seed and clones
+identical compacted contexts, excluding initial declaration overhead.
+
+Fixture changes are performed only by the harness, not the read-only model;
+each arm gets the same changed state, and files are checked afterward. Ineligible
+seeds/retained facts are recorded rather than silently selected away. Paid
+terminal-phase metrics are retained on fatal model/cost failures in new-mode
+reports. None of these fixtures are real sessions or project data.
 
 ## Recorded evidence
 
@@ -194,6 +245,67 @@ bun run bench --model openai-codex/gpt-5.5 --trials 3 \
   --output bench-results/comparison.json
 rm -r "$previous"
 ```
+
+### Broader scenarios, tools enabled from the start
+
+[Eight lifecycle tasks, 2026-10-01](evidence/mixed-lifecycle-2026-10-01.json):
+`mixed-v2`, two repetitions per case, two conditions, GPT-5.5/low, OMP 18.4.4,
+controlled loss, cap 32 tools/34 model messages per phase, 240-second timeout.
+The runtime extension is unchanged from the revised implementation above; only
+the benchmark expanded. All 16 arm investigations passed exact grading and all
+historical facts were absent after compaction. Both conditions completed every
+follow-up. No history calls occurred before compaction; declaration overhead
+and initial source-tool choices are nevertheless included.
+
+| Two conversations per case | Baseline exact fields | History exact fields | Baseline lifecycle calls | History lifecycle calls | Baseline estimated cost | History estimated cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Cheap control | 16/16 | 16/16 | 25 | 16 | $0.408 | $0.297 |
+| Eight-hop reconstruction | 16/16 | 16/16 | 43 | 24 | $0.995 | $0.425 |
+| Superseded user decision | 0/16 | 16/16 | 26 | 18 | $0.450 | $0.698 |
+| Historical + changed current state | 16/32 | 32/32 | 26 | 26 | $0.588 | $0.428 |
+
+Baseline returned 32 explicit unknowns: 16 approved-decision values and 16
+historical values no longer in current files. Neither condition made a wrong
+non-null final claim. Both verified all 16 current-state fields correctly;
+history did **not** substitute stale values. History used one successful
+search/read pair in every follow-up, adding current-source checks when required.
+
+| Whole measured conversation totals (8 tasks) | Baseline | History |
+| --- | ---: | ---: |
+| Exact fields | 48/80 | 80/80 |
+| Explicit unknown fields | 32 | 0 |
+| Model calls | 120 | 84 |
+| Tool calls | 130 | 74 |
+| Tool errors | 18 | 0 |
+| Uncached input | 313,854 | 245,429 |
+| Cache-read tokens | 1,077,760 | 800,256 |
+| Output tokens | 11,103 | 7,344 |
+| Reported total tokens | 1,402,717 | 1,053,029 |
+| Model phases + compaction time | 378.6 s | 252.8 s |
+| Cold-start wall time, including two launches per arm | 399.3 s | 275.2 s |
+| Catalog-estimated cost, not billing | $2.441 | $1.848 |
+
+The mixed total is about 25% fewer reported tokens, 33% less phase time, and
+24% lower estimated cost, **but it pools tasks with different attainable
+information and correctness**. Use the per-case comparisons, not a universal
+savings claim. The user-decision case cost about 55% more with history: its first
+history-enabled setup alone consumed unusually many tokens using native source
+tools, not history calls. Independent initial investigations make that variance
+part of lifecycle outcomes; this cannot isolate declaration overhead causally.
+
+All 18 baseline errors were native follow-up file-tool errors classified `other`;
+their precise cause is not established by the exported diagnostics. The harness
+also rejects internal artifact URLs, which may hinder native workflows. These
+restrictions and model errors can magnify measured reconstruction costs. It is
+not a comparison with an optimal filesystem strategy. Cheap-control results do
+not reverse the earlier evidence that history can be skipped or cost more.
+
+Two repetitions, one model, synthetic strings, controlled summaries, no real
+coding edits or subjective rationale grading: this establishes a narrowly
+exercised recovery capability, not robust production ROI. It measures one short
+conversation with one compaction, not continuous declaration cost over long
+sessions or the natural frequency of missing facts. The total run's estimated
+cost was $4.289 across both conditions; no extra unsuccessful arm was excluded.
 
 Normal model-free tests additionally exercise same-entry isolation, reused IDs,
 clear/hidden-content boundaries, literal Unicode anchors, invalid inputs,

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Broaden the opt-in benchmark to eight-hop reconstruction, superseded user
+  decisions and historical/current-state checks; measure independent full
+  conversations with tool declarations enabled from the initial investigation.
+  Grade honest unknowns separately from wrong claims and publish per-case
+  outcomes, including an increased-cost case. Runtime tools are unchanged.
 - Narrow recovery guidance to specific missing decisions, rationale, errors or
   costly prior results, with a default search/read pair and one corrected retry.
 - Add optional same-entry literal `all_of` anchors and entry line bounds to grep;

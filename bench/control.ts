@@ -2,6 +2,7 @@
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
 import { resolve, relative, isAbsolute } from "node:path";
 import { summary, tail } from "./fixture";
+import { mixedSummary } from "./scenarios";
 
 export function permittedPath(root: string, value: unknown): boolean {
 	if (typeof value !== "string" || value.startsWith("~") || /^[a-z][a-z0-9+.-]*:/i.test(value)) return false;
@@ -48,6 +49,6 @@ export default function control(pi: ExtensionAPI) {
 		if (process.env.OMP_BENCH_COMPACTION !== "controlled") return;
 		const kept = [...event.branchEntries].reverse().find(e => e.type === "message" && e.message.role === "user" && e.message.content === tail);
 		if (!kept) return { cancel: true };
-		return { compaction: { summary, firstKeptEntryId: kept.id, tokensBefore: event.preparation.tokensBefore } };
+		return { compaction: { summary: process.env.OMP_BENCH_SUITE === "mixed-v2" ? mixedSummary : summary, firstKeptEntryId: kept.id, tokensBefore: event.preparation.tokensBefore } };
 	});
 }
