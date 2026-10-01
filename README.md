@@ -6,21 +6,53 @@
 
 **Recover the missing detail—not the whole conversation.**
 
-An [Oh My Pi](https://github.com/can1357/oh-my-pi) (OMP) extension that gives your
-agent two bounded tools for retrieving visible history from the current session.
-Useful when a filename, decision, or error message has slipped out of context
-following compaction.
+[For Humans](#for-humans) · [For Agents](#for-agents)
 
-- **Search, then read:** find a distinctive phrase and retrieve a small excerpt.
-- **Branch-aware:** reads the active branch, including persisted history before compaction.
-- **Snapshot-safe:** references survive appends but reject changed history or sessions.
-- **Local and read-only:** no runtime npm dependencies, external processes, network
-  requests, or session writes.
+## For Humans
 
-> **OMP only.** Tested with Oh My Pi 18.1.15. This extension uses OMP's injected
-> schema builder and approval/load-mode metadata; upstream Pi is not currently supported.
+### The problem
 
-## Quick start
+Long coding conversations eventually grow too large for an agent to keep every
+message in its working context. [Oh My Pi](https://github.com/can1357/oh-my-pi)
+(OMP) can **compact** that conversation into a summary so work can continue—but
+summaries inevitably leave out details.
+
+You might have already supplied the exact error message, agreed on a filename,
+or explained why an approach was rejected. After compaction, that detail may
+still exist in the session history without being available in the agent's
+current context. The agent may ask you to repeat it, redo an investigation, or
+make an assumption where it should check the evidence.
+
+### What omp-history does
+
+This plugin gives the agent a way to look up **one missing detail** instead of
+rereading the entire conversation. It searches the current session's visible
+history for a distinctive phrase, then reads a small excerpt around the match.
+
+For example: if a summary says “we ruled out the first approach” but omits why,
+the agent can search for that approach and retrieve the earlier explanation
+before deciding what to do next.
+
+- **Less repetition:** recover information you've already discussed.
+- **Small, focused lookups:** bring back the relevant excerpt, not a wall of history.
+- **The current conversation only:** follow its active branch, not unrelated sessions.
+- **Local and read-only:** the plugin doesn't upload history or modify session files.
+
+It isn't unlimited memory, a session browser, or a guarantee that the agent will
+never forget anything. It can't recover deleted content, and it doesn't make
+historical statements proof of the current state. It also **doesn't redact
+secrets** already present in visible messages or ordinary tool output.
+
+Once installed, the tools are available for the agent to use when a specific
+fact is missing. You don't need to manually copy session IDs or export logs.
+
+> **OMP only.** Tested with Oh My Pi 18.1.15; upstream Pi is not currently supported.
+
+Installation and the full technical reference are below.
+
+## For Agents
+
+### Installation
 
 Requires an installed OMP runtime and Bun (1.3.14 or newer). These shell commands
 work on Linux, macOS, and WSL. Choose any checkout location you prefer:
@@ -40,7 +72,7 @@ The symlink keeps the checkout as the source of truth. To update, run
 `git -C ~/src/omp-history pull --ff-only`, then restart OMP or reload extensions.
 To uninstall, remove only the symlink from OMP's extensions directory and reload.
 
-## How it works
+### Tool usage
 
 The agent first searches for a specific missing fact:
 
@@ -73,7 +105,7 @@ whitespace is preserved. Transcript lines follow natural text newlines
 (CRLF/CR normalized to LF) and entry headers—not terminal wrapping or physical
 JSONL lines. EOF reads return available lines and explicitly report EOF.
 
-### Retrieval is targeted, not automatic
+#### Retrieval is targeted, not automatic
 
 Both tools carry model-facing guidance to:
 
@@ -87,7 +119,10 @@ Both tools carry model-facing guidance to:
 
 These are usage instructions, not a sandbox restricting the agent's other tools.
 
-## Privacy, limits, and consistency
+### Privacy, limits, and consistency
+
+This extension uses OMP's injected schema builder and approval/load-mode metadata.
+It has no runtime npm dependencies, external processes, network requests, or session writes.
 
 **Included:** visible user and assistant text, visible custom text blocks,
 file-mention text, ordinary tool arguments/results, and compaction/branch summaries.
@@ -117,7 +152,7 @@ binary data.
 The extension cannot restore deleted/pruned content or data that was never
 persisted in session entries.
 
-## Development
+### Development
 
 ```bash
 cd ~/src/omp-history
@@ -146,7 +181,7 @@ OMP_PACKAGE_ROOT=/path/to/@oh-my-pi/pi-coding-agent bun test
 The `omp.extensions` manifest and directory `index.ts` ensure only the entry
 point is loaded, not helper or test modules.
 
-## Contributing
+### Contributing
 
 Small, focused issues and pull requests are welcome. Include a synthetic
 reproduction and run `bun test` before submitting. Changes to retrieval behavior
