@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Harden both tool descriptions to include user-authored decision evidence,
+  explicit supersession and historical/current-state distinctions; avoid repeated
+  file lookups for conversation-only decisions and acknowledge unresolved conflicts.
+  Keep current instructions authoritative. Wording-only changes preserve schemas,
+  retrieval behavior, privacy boundaries and budgets; performance is not remeasured.
 - Broaden the opt-in benchmark to eight-hop reconstruction, superseded user
   decisions and historical/current-state checks; measure independent full
   conversations with tool declarations enabled from the initial investigation.
