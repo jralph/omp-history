@@ -21,7 +21,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "check": "bun run typecheck && bun test"
+    "check": "bun run typecheck && bun test",
+    "bench": "bun bench/run.ts"
   },
   "engines": {
     "bun": ">=1.3.14"

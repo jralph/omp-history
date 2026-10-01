@@ -5,3 +5,4 @@ node_modules/
 .direnv/
 coverage/
 *.log
+bench-results/

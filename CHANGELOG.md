@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add an explicitly opt-in, isolated, actual OMP CLI benchmark for paired
+  post-compaction recovery; routine tests and CI remain model-free.
+- Publish aggregate experimental evidence and concise human-facing findings,
+  distinguishing observed usage from measured performance and estimates.
+
 ## 0.3.0
 
 ### Correctness and privacy

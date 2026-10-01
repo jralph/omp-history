@@ -73,6 +73,12 @@ Use synthetic fixtures only. Never read live sessions to build tests or commit
 session data, credentials, private logs, or screenshots. Do not invoke an LLM
 for validation.
 
+The separate `bun run bench` experiment may call models only with explicit user
+approval and `--allow-model-calls`. It is not routine validation or an installation
+check. Keep CI/model-free tests separate, use synthetic fixtures and isolated
+homes/sessions, never enable OpenRouter, and publish only aggregate results.
+See `bench/README.md` for authentication, cost limits, and experimental caveats.
+
 ## Change discipline
 
 - Keep changes focused and follow the style of the file being edited.

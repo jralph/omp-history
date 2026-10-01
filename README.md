@@ -50,6 +50,21 @@ fact is missing. You don't need to manually copy session IDs or export logs.
 
 > **OMP only.** This release is tested with Oh My Pi 18.4.4. Use 18.4.4 or newer for durable `/clear` boundaries; upstream Pi is not currently supported.
 
+### Evidence so far
+
+- **Observed use:** in one local workload (Sept 1–Oct 1, 2026), 10 sessions
+  contained 74 successful searches and 40 reads. About 76% of hash-verified
+  retrieved lines came from earlier tool output. This shows use, not savings.
+- **Measured CLI experiment:** three paired synthetic tasks with OMP 18.4.4
+  and GPT-5.5 after deliberately lossy compaction. Both conditions recovered
+  24/24 answer fields. History enabled used **23 vs 16 model calls**,
+  **288,433 vs 65,792 reported total tokens**, and **78.0 vs 49.5 seconds**
+  for the follow-ups. The agent used history in only one trial, which had five
+  tool errors. **This run did not demonstrate savings.**
+
+These small, workload-specific results aren't a general performance guarantee.
+[Benchmark method, caveats, and aggregate evidence](bench/README.md).
+
 Installation and the full technical reference are below.
 
 ## For Agents

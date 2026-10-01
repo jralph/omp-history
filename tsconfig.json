@@ -9,5 +9,5 @@
     "types": ["bun"],
     "allowImportingTsExtensions": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "bench/*.ts"]
 }

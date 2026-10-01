@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "workload": "linked-registry-v1",
+  "createdAt": "2026-10-01T15:19:41.723Z",
+  "model": "openai-codex/gpt-5.5",
+  "thinking": "low",
+  "compaction": "controlled",
+  "seed": "omp-history-linked-registry-v1",
+  "requestedTrials": 3,
+  "runtimeVersion": "18.4.4",
+  "extensionVersion": "0.3.0",
+  "notes": [
+    "Synthetic paired experiment; not a population estimate.",
+    "Fixed lossy summary in controlled mode; natural mode keeps OMP's summarizer.",
+    "Shared seed investigation is reported separately, not charged twice.",
+    "Input excludes separately reported cacheRead/cacheWrite; totalTokens is provider-reported.",
+    "Cost is OMP's catalog estimate, not an invoice. Timing excludes process startup.",
+    "Normal prompt caching remains enabled; arm order alternates.",
+    "Only aggregate measurements are exported; temporary sessions/homes are deleted."
+  ],
+  "trials": [
+    {
+      "trial": 1,
+      "fixtureSha256": "a2f50d0c84f9e508d8c14c355d2aa8cc07f7ac8e0f3b482a2b3bbd52e528a94d",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 14701,
+        "modelCalls": 5,
+        "toolCalls": 5,
+        "toolErrors": 0,
+        "toolOutputBytes": 6253,
+        "tools": {
+          "grep": 4,
+          "glob": 1
+        },
+        "errorCategories": {},
+        "input": 17013,
+        "output": 441,
+        "cacheRead": 51200,
+        "cacheWrite": 0,
+        "totalTokens": 68654,
+        "estimatedCostUsd": 0.123895,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "history": {
+          "elapsedMs": 16836,
+          "modelCalls": 6,
+          "toolCalls": 5,
+          "toolErrors": 0,
+          "toolOutputBytes": 55829,
+          "tools": {
+            "grep": 5
+          },
+          "errorCategories": {},
+          "input": 30341,
+          "output": 488,
+          "cacheRead": 87552,
+          "cacheWrite": 0,
+          "totalTokens": 118381,
+          "estimatedCostUsd": 0.210121,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "baseline": {
+          "elapsedMs": 18093,
+          "modelCalls": 6,
+          "toolCalls": 6,
+          "toolErrors": 1,
+          "toolOutputBytes": 5557,
+          "tools": {
+            "grep": 5,
+            "glob": 1
+          },
+          "errorCategories": {
+            "other": 1
+          },
+          "input": 6845,
+          "output": 515,
+          "cacheRead": 17408,
+          "cacheWrite": 0,
+          "totalTokens": 24768,
+          "estimatedCostUsd": 0.05837900000000001,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        }
+      },
+      "compactionMs": 11,
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "18b99a55d1cecafecd3531702d7df5d3d91cfee6cbe71b6f545a5c8265a6711b"
+    },
+    {
+      "trial": 2,
+      "fixtureSha256": "de4f783b752d0d7879d29cdca173bf6187de775bf62eefade8ef46edb24868f1",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 20537,
+        "modelCalls": 6,
+        "toolCalls": 9,
+        "toolErrors": 0,
+        "toolOutputBytes": 13318,
+        "tools": {
+          "grep": 4,
+          "glob": 1,
+          "read": 4
+        },
+        "errorCategories": {},
+        "input": 19021,
+        "output": 572,
+        "cacheRead": 72704,
+        "cacheWrite": 0,
+        "totalTokens": 92297,
+        "estimatedCostUsd": 0.148617,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "baseline": {
+          "elapsedMs": 15644,
+          "modelCalls": 5,
+          "toolCalls": 5,
+          "toolErrors": 0,
+          "toolOutputBytes": 5263,
+          "tools": {
+            "grep": 5
+          },
+          "errorCategories": {},
+          "input": 5626,
+          "output": 458,
+          "cacheRead": 14848,
+          "cacheWrite": 0,
+          "totalTokens": 20932,
+          "estimatedCostUsd": 0.049294000000000004,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        },
+        "history": {
+          "elapsedMs": 17164,
+          "modelCalls": 5,
+          "toolCalls": 6,
+          "toolErrors": 0,
+          "toolOutputBytes": 100061,
+          "tools": {
+            "grep": 5,
+            "glob": 1
+          },
+          "errorCategories": {},
+          "input": 44960,
+          "output": 555,
+          "cacheRead": 62976,
+          "cacheWrite": 0,
+          "totalTokens": 108491,
+          "estimatedCostUsd": 0.272938,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        }
+      },
+      "compactionMs": 12,
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "a279278ed8a1fdb1d64cb6e4b078070403a39aaa4f4dfacccfda949e915224da"
+    },
+    {
+      "trial": 3,
+      "fixtureSha256": "6a63835d236c8730daac5c571264b512aeef5b9aa09bf30ba89a9a21c2681c69",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 13605,
+        "modelCalls": 5,
+        "toolCalls": 4,
+        "toolErrors": 0,
+        "toolOutputBytes": 4628,
+        "tools": {
+          "grep": 4
+        },
+        "errorCategories": {},
+        "input": 15269,
+        "output": 377,
+        "cacheRead": 50688,
+        "cacheWrite": 0,
+        "totalTokens": 66334,
+        "estimatedCostUsd": 0.112999,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "history": {
+          "elapsedMs": 44022,
+          "modelCalls": 12,
+          "toolCalls": 11,
+          "toolErrors": 5,
+          "toolOutputBytes": 6303,
+          "tools": {
+            "session_grep": 1,
+            "session_read": 6,
+            "grep": 4
+          },
+          "errorCategories": {
+            "other": 5
+          },
+          "input": 13911,
+          "output": 1058,
+          "cacheRead": 46592,
+          "cacheWrite": 0,
+          "totalTokens": 61561,
+          "estimatedCostUsd": 0.12459100000000001,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "baseline": {
+          "elapsedMs": 15789,
+          "modelCalls": 5,
+          "toolCalls": 5,
+          "toolErrors": 1,
+          "toolOutputBytes": 4697,
+          "tools": {
+            "grep": 5
+          },
+          "errorCategories": {
+            "other": 1
+          },
+          "input": 7323,
+          "output": 481,
+          "cacheRead": 12288,
+          "cacheWrite": 0,
+          "totalTokens": 20092,
+          "estimatedCostUsd": 0.057189000000000004,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        }
+      },
+      "compactionMs": 10,
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "477075b2ace87d2fa4a57e4931ed78ddb15010ff04313ab3366afb13a024ef5a"
+    }
+  ],
+  "failure": null
+}
