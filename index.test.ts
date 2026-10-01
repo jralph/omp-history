@@ -8,12 +8,14 @@ test("registers both session tools as read-only OMP tools", () => {
 		max: () => schema,
 		int: () => schema,
 		describe: () => schema,
+		optional: () => schema,
 	};
 	extension({
 		zod: {
 			string: () => schema,
 			number: () => schema,
 			object: () => schema,
+			enum: () => schema,
 			optional: () => schema,
 		},
 		registerTool: (tool: Record<string, unknown>) => tools.push(tool),

@@ -17,8 +17,9 @@ Bug reports, documentation improvements, and focused pull requests are welcome.
    limits—in an issue first.
 3. Use minimal, synthetic examples. Never share real session transcripts,
    credentials, or private tool output.
-4. Include regression tests for behavior changes and run `bun test` against an
-   installed OMP runtime. Document the runtime version and any validation blockers.
+4. Include regression tests for behavior changes and run `bun run check` after
+   `bun install --frozen-lockfile`. The pinned OMP development runtime is used by
+   default; document the runtime version and any validation blockers.
 5. Keep documentation aligned with the implementation and explain the change
    clearly in your pull request.
 

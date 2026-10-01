@@ -36,6 +36,8 @@ before deciding what to do next.
 - **Less repetition:** recover information you've already discussed.
 - **Small, focused lookups:** bring back the relevant excerpt, not a wall of history.
 - **The current conversation only:** follow its active branch, not unrelated sessions.
+- **Clear means clear:** retrieve pre-compaction details, but never cross the latest `/clear` boundary.
+- **Evidence with outcomes:** keep timestamps and success/error/cancellation status so attempts aren't mistaken for completed work.
 - **Local and read-only:** the plugin doesn't upload history or modify session files.
 
 It isn't unlimited memory, a session browser, or a guarantee that the agent will
@@ -46,7 +48,7 @@ secrets** already present in visible messages or ordinary tool output.
 Once installed, the tools are available for the agent to use when a specific
 fact is missing. You don't need to manually copy session IDs or export logs.
 
-> **OMP only.** Tested with Oh My Pi 18.1.15 and 18.4.4; upstream Pi is not currently supported.
+> **OMP only.** This release is tested with Oh My Pi 18.4.4. Use 18.4.4 or newer for durable `/clear` boundaries; upstream Pi is not currently supported.
 
 Installation and the full technical reference are below.
 
@@ -64,7 +66,7 @@ Restart OMP after installing extension modules.
 omp plugin install github:jralph/omp-history
 ```
 
-To pin the release, use `github:jralph/omp-history#v0.2.1` instead. OMP registers
+To pin the release, use `github:jralph/omp-history#v0.3.0` instead. OMP registers
 the package as `omp-session-history` (the package name, not the repository name).
 
 ```bash
@@ -124,6 +126,7 @@ The agent first searches for a specific missing fact:
 ```
 
 `session_grep` returns matching transcript line numbers, abbreviated previews,
+1-based Unicode code-point match columns, source headers with timestamps/outcomes,
 and a `Snapshot` reference. The agent can then call `session_read`, copying that
 reference unchanged:
 
@@ -140,13 +143,53 @@ session ID. Line 42 is illustrative; use a line returned by your search.
 
 | Tool | Arguments | Behavior |
 | --- | --- | --- |
-| `session_grep` | `query` | Case-insensitive, single-line literal search; at most 30 matches and 8 KiB output. |
-| `session_read` | `snapshot`, `start_line`, `line_count` | Read a 1-based range; at most 50 lines and 32 KiB output. |
+| `session_grep` | `query`, optional `kind` and `context_lines` | Case-insensitive, single-line literal search; at most 30 matches, 50 transcript lines including context, and 8 KiB output. |
+| `session_read` | `snapshot`, `start_line`, optional `line_count`, `start_column`, `char_count` | Read a 1-based range (default 1 line); at most 50 full lines and 32 KiB output. Explicit character excerpts use one line and at most 4096 code points. |
 
 Queries are not regex or shell syntax. Do not add quote delimiters; intended
 whitespace is preserved. Transcript lines follow natural text newlines
 (CRLF/CR normalized to LF) and entry headers—not terminal wrapping or physical
-JSONL lines. EOF reads return available lines and explicitly report EOF.
+JSONL lines. EOF reads return available lines and explicitly report **snapshot EOF**:
+appended messages aren't part of the earlier snapshot. Search again for newer content.
+
+#### Filters and small context windows
+
+```json
+{"query": "refreshToken", "kind": "user", "context_lines": 1}
+```
+
+`kind` is one of `user`, `assistant`, `tool`, `summary`, or `other`; omit it to
+search all visible kinds. `tool` includes tool results and user shell/Python
+executions. Assistant tool-call arguments belong to `assistant`. `other` covers
+visible custom/hook/developer messages and file mentions. Summaries are labeled
+**not verbatim**. Missing outcome flags are labeled unknown, never presumed successful.
+
+`context_lines` adds 0–3 preview lines on each side of a match, restricted to the
+same entry. Filters don't renumber the transcript. Repeated context counts toward
+the shared output limits; reduce context or narrow the query if the tool rejects it.
+Previews are intentionally abbreviated, while ordinary reads return complete lines.
+
+#### Long-line excerpts
+
+A single minified JSON line or tool result can exceed the full-line read budget.
+Instead of increasing limits or bypassing them, request a small character excerpt:
+
+```text
+session_read({
+  snapshot: "<Snapshot returned by session_grep>",
+  start_line: 42,
+  line_count: 1,
+  start_column: 20001,
+  char_count: 200
+})
+```
+
+Use the match column returned by grep, optionally starting slightly before it.
+Both `start_column` and `char_count` are required for this mode. Columns and counts
+use Unicode code points, not UTF-16 units, bytes, or visual display width.
+Surrogate pairs aren't split. Output explicitly labels the excerpt's range and
+whether content was omitted before/after it; this is **not silent truncation**.
+Do not use excerpts to reconstruct an entire long line.
 
 #### Retrieval is targeted, not automatic
 
@@ -180,12 +223,22 @@ binary data.
 
 - Over-budget requests fail with tool errors, not partial matches or byte-truncated reads.
   Output budgets reserve space for response metadata; a single very long line can be rejected.
-- Local rendered transcripts are capped at **64 MiB / 1,000,000 lines**.
-- Cancellation is checked before work and during entry/search loops. Rendering is
-  synchronous, so it cannot preempt the rendering of one enormous entry.
-- Snapshot references hash the rendered prefix and runtime session ID. Appending
-  messages or compaction records preserves existing references. Changed sessions,
-  shortened/rewritten prefixes, or divergent branches require another search.
+- Local rendered transcript text is capped at **64 MiB / 1,000,000 lines**.
+  Budgets are checked before retaining each line; multiline content is scanned
+  without splitting/joining an entire entry. This is not a hard process-RAM ceiling:
+  the runtime's existing entries, provenance, and temporary serialization also use memory.
+- Cancellation is checked during rendering, searching, excerpt scanning, and hashing.
+  Work remains synchronous; individual JSON serialization/lowercasing operations
+  aren't worker-preemptible, and cancellation doesn't yield to the event loop.
+- Snapshot references hash original UTF-16 code units in bounded chunks, the runtime
+  session ID, and the latest clear-boundary identity. Appending messages or compaction
+  records preserves existing references. Changed sessions, shortened/rewritten
+  prefixes, divergent visible branches, or `/clear` require another search.
+- Scope starts after the latest `reset_boundary` recorded by `/clear`. Compaction
+  does not reset retrieval. Snapshots created before a clear are invalid, even
+  if they represented empty history. No option bypasses this boundary.
+- Version 0.3.0 uses `v3:` references and richer provenance headers. References from
+  earlier versions are invalid: run a fresh grep after updating.
 - Retrieval uses `ctx.sessionManager.getBranch()` and `getSessionId()` on every
   invocation, including in-memory sessions. No guessed paths, JSONL parsing,
   disk cache, or cross-session singleton state.
@@ -199,16 +252,20 @@ persisted in session entries.
 
 ```bash
 cd ~/src/omp-history
-bun test
+bun install --frozen-lockfile
+bun run check
 ```
 
-Tests cover filtering, output budgets, natural line addressing, ordering,
-snapshots, and real OMP loader/adapter execution. They do not invoke an LLM or
-open live session files for writing.
+`bun run check` runs strict TypeScript checking and the full Bun test suite.
+Tests cover filtering, byte/line boundaries, Unicode previews/excerpts, outcomes,
+snapshots, real OMP schemas/loader/adapter execution, real in-memory branches,
+compaction and clear boundaries, and 500 deterministic mixed-Unicode fixtures.
+They do not invoke an LLM or read/write live session files.
 
-Integration tests expect OMP at
-`~/.bun/install/global/node_modules/@oh-my-pi/pi-coding-agent`. For another
-installation, point to the package root containing `src/`:
+OMP 18.4.4, TypeScript, and Bun types are pinned **development-only** dependencies;
+the loaded extension still has no runtime npm dependencies. CI checks Bun 1.3.14
+and 1.4.0. Integration tests use the development OMP package by default. To verify
+another installation, point to the package root containing `src/`:
 
 ```bash
 OMP_PACKAGE_ROOT=/path/to/@oh-my-pi/pi-coding-agent bun test

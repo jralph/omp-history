@@ -3,14 +3,14 @@
   "owner": { "name": "jralph" },
   "metadata": {
     "description": "Bounded session-history retrieval for Oh My Pi",
-    "version": "0.2.1"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "omp-history",
       "source": "./",
       "description": "Recover specific missing details from the current session with session_grep and session_read.",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "author": { "name": "jralph" },
       "homepage": "https://github.com/jralph/omp-history",
       "repository": "https://github.com/jralph/omp-history.git",
