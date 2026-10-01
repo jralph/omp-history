@@ -18,6 +18,8 @@ Read `README.md` and the relevant implementation/tests before making changes.
 - `*.test.ts`: synthetic unit/regression fixtures and real OMP loader/adapter tests.
 - `package.json`: explicit OMP extension entry point; do not expose helpers/tests
   to extension discovery.
+- `.omp-plugin/marketplace.json`: one-plugin community catalog pointing to this
+  repository root; keep catalog versions aligned with `package.json`.
 
 ## Required invariants
 
@@ -69,4 +71,9 @@ for validation.
 - Loading/reloading extensions can activate checkout changes immediately on a
   machine using a symlink. Do not modify global agent configuration as part of a
   normal repository change.
+- For releases, update `package.json`, marketplace metadata/plugin versions, and
+  README pinning examples together. Run tests before creating a matching `vX.Y.Z`
+  tag and GitHub release. Keep npm publication private unless explicitly approved.
+- Validate managed Git/marketplace installation in an isolated temporary HOME,
+  never the user's live plugin directories. Do not enable OpenRouter or call an LLM.
 - Summarize changed files, tests run, and any remaining compatibility limitations.

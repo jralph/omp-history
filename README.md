@@ -46,7 +46,7 @@ secrets** already present in visible messages or ordinary tool output.
 Once installed, the tools are available for the agent to use when a specific
 fact is missing. You don't need to manually copy session IDs or export logs.
 
-> **OMP only.** Tested with Oh My Pi 18.1.15; upstream Pi is not currently supported.
+> **OMP only.** Tested with Oh My Pi 18.1.15 and 18.4.4; upstream Pi is not currently supported.
 
 Installation and the full technical reference are below.
 
@@ -54,8 +54,51 @@ Installation and the full technical reference are below.
 
 ### Installation
 
-Requires an installed OMP runtime and Bun (1.3.14 or newer). These shell commands
-work on Linux, macOS, and WSL. Choose any checkout location you prefer:
+Requires an installed OMP runtime and Bun (1.3.14 or newer). Use **one** of the
+following installation methods; registering multiple copies can duplicate tools.
+Restart OMP after installing extension modules.
+
+#### Managed Git installation (recommended)
+
+```bash
+omp plugin install github:jralph/omp-history
+```
+
+To pin the release, use `github:jralph/omp-history#v0.2.1` instead. OMP registers
+the package as `omp-session-history` (the package name, not the repository name).
+
+```bash
+omp plugin upgrade omp-session-history
+omp plugin uninstall omp-session-history
+```
+
+An upgrade follows the installed Git ref; a pinned tag stays pinned. Restart OMP
+after upgrading or removing the extension. No npm publication is required.
+
+#### Marketplace installation
+
+The repository also supplies a one-plugin catalog for OMP's plugin browser:
+
+```bash
+omp plugin marketplace add jralph/omp-history
+omp plugin discover jralph-omp-history
+omp plugin install omp-history@jralph-omp-history
+```
+
+After adding the catalog, you can also browse it with `/marketplace` in OMP.
+This is a community marketplace, not an official OMP listing or endorsement.
+
+```bash
+omp plugin marketplace update jralph-omp-history
+omp plugin upgrade omp-history@jralph-omp-history
+omp plugin uninstall omp-history@jralph-omp-history
+```
+
+Restart OMP after install, upgrade, or uninstall.
+
+#### Local checkout (development)
+
+These shell commands work on Linux, macOS, and WSL. Choose any checkout location:
 
 ```bash
 mkdir -p ~/src
@@ -180,6 +223,13 @@ OMP_PACKAGE_ROOT=/path/to/@oh-my-pi/pi-coding-agent bun test
 
 The `omp.extensions` manifest and directory `index.ts` ensure only the entry
 point is loaded, not helper or test modules.
+
+### Releases and licensing
+
+Licensed under [MIT](LICENSE). Releases are tagged `vX.Y.Z`; the package version
+and `.omp-plugin/marketplace.json` versions are kept in sync. The npm package
+remains marked `private` to prevent accidental npm publication; Git and
+marketplace installation are supported independently.
 
 ### Contributing
 

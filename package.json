@@ -1,9 +1,18 @@
 {
   "name": "omp-session-history",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Bounded, session-aware history retrieval for Oh My Pi",
+  "license": "MIT",
+  "author": "jralph",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jralph/omp-history.git"
+  },
+  "homepage": "https://github.com/jralph/omp-history#readme",
+  "bugs": { "url": "https://github.com/jralph/omp-history/issues" },
+  "keywords": ["oh-my-pi", "omp", "omp-extension", "session-history", "ai-agents"],
   "omp": { "extensions": ["./index.ts"] },
   "scripts": { "test": "bun test" },
   "engines": { "bun": ">=1.3.14" }

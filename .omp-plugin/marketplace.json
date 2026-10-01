@@ -1,0 +1,23 @@
+{
+  "name": "jralph-omp-history",
+  "owner": { "name": "jralph" },
+  "metadata": {
+    "description": "Bounded session-history retrieval for Oh My Pi",
+    "version": "0.2.1"
+  },
+  "plugins": [
+    {
+      "name": "omp-history",
+      "source": "./",
+      "description": "Recover specific missing details from the current session with session_grep and session_read.",
+      "version": "0.2.1",
+      "author": { "name": "jralph" },
+      "homepage": "https://github.com/jralph/omp-history",
+      "repository": "https://github.com/jralph/omp-history.git",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": ["oh-my-pi", "omp", "session-history", "context-recovery"],
+      "tags": ["history", "read-only"]
+    }
+  ]
+}
