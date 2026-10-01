@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">omp-history</title>
+  <desc id="desc">A teal rewind arrow surrounds three transcript lines on a rounded dark square.</desc>
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+  <g fill="none" stroke="#2dd4bf" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M65 76a80 80 0 1 1-14 84"/>
+    <path d="M65 46v30h30"/>
+  </g>
+  <g fill="none" stroke-width="12" stroke-linecap="round">
+    <path d="M101 105h54" stroke="#f1f5f9"/>
+    <path d="M101 129h42" stroke="#2dd4bf"/>
+    <path d="M101 153h30" stroke="#f1f5f9"/>
+  </g>
+</svg>

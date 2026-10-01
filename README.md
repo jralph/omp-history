@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="omp-history — a history arrow surrounding transcript lines" width="128" height="128">
+</p>
+
 # omp-history
 
 **Recover the missing detail—not the whole conversation.**
