@@ -13,6 +13,7 @@ test("registers both session tools as read-only OMP tools", () => {
 	extension({
 		zod: {
 			string: () => schema,
+			array: () => schema,
 			number: () => schema,
 			object: () => schema,
 			enum: () => schema,
@@ -25,14 +26,14 @@ test("registers both session tools as read-only OMP tools", () => {
 	expect(tools.every(tool => tool.approval === "read")).toBe(true);
 	expect(tools.every(tool => typeof tool.execute === "function")).toBe(true);
 	for (const tool of tools) {
-		expect(tool.description).toContain("specific missing information");
-		expect(tool.description).toContain("Do not reread the full session");
-		expect(tool.description).toContain("Stop once the missing information is recovered");
-		expect(tool.description).toContain("Use available context or the compaction summary first");
-		expect(tool.description).toContain("Do not bypass limits");
-		expect(tool.description).toContain("Distinguish plans from confirmed actions");
+		expect(tool.description).toContain("specific missing user decision");
+		expect(tool.description).toContain("Never browse, paginate to reconstruct history");
+		expect(tool.description).toContain("one targeted search and one small read, then stop");
+		expect(tool.description).toContain("Use current context first");
+		expect(tool.description).toContain("prefer authoritative files");
+		expect(tool.description).toContain("one corrected retry cycle");
 		expect(tool.description).toContain("verify current state");
 		expect(tool.description).toContain("No match is not proof");
-		expect(tool.description).toContain("never invent missing details");
+		expect(tool.description).toContain("never repeat unchanged failures or guess references");
 	}
 });

@@ -21,9 +21,9 @@ export interface Transcript {
 	/** Latest /clear boundary; part of the snapshot identity, even for empty history. */
 	boundaryId?: string;
 }
-export interface GrepOptions { kind?: Kind; context_lines?: number }
+export interface GrepOptions { kind?: Kind; context_lines?: number; all_of?: string[] }
 export interface ReadOptions { start_column?: number; char_count?: number }
-export interface Hit { line: number; startColumn: number; endColumn: number; source?: Source }
+export interface Hit { line: number; startColumn: number; endColumn: number; source?: Source; entryStartLine: number; entryEndLine: number }
 type Success<T> = { ok: true } & T;
 type Failure = { ok: false; error: string };
 export type Result<T> = Success<T> | Failure;
@@ -195,6 +195,9 @@ export function validateGrep(query: unknown, maxMatches: number, options: GrepOp
 	}
 	if (!Number.isSafeInteger(maxMatches) || maxMatches < 1 || maxMatches > 50) return { ok: false, error: "Match limit must be between 1 and 50." };
 	if (options.kind !== undefined && !KINDS.includes(options.kind)) return { ok: false, error: "kind must be user, assistant, tool, summary, or other." };
+	if (options.all_of !== undefined && (!Array.isArray(options.all_of) || options.all_of.length < 1 || options.all_of.length > 3 || options.all_of.some(anchor => typeof anchor !== "string" || !anchor.trim() || anchor.length > 256 || /[\r\n]/.test(anchor)))) {
+		return { ok: false, error: "all_of must contain 1–3 non-empty single-line literal anchors, each at most 256 characters. Anchors must occur in the same visible entry, not elsewhere in the session." };
+	}
 	const context = options.context_lines === undefined ? 0 : options.context_lines;
 	if (!Number.isSafeInteger(context) || context < 0 || context > 3) return { ok: false, error: "context_lines must be between 0 and 3." };
 	return { ok: true };
@@ -248,28 +251,48 @@ export function grepTranscript(transcript: Transcript, query: string, maxMatches
 	const foldedQuery = query.toLowerCase();
 	const matches: string[] = [], hits: Hit[] = [];
 	let bytes = 0, renderedLines = 0;
-	for (let index = 0; index < transcript.lines.length; index++) {
+	const anchors = (options.all_of ?? []).map(anchor => anchor.toLowerCase());
+	for (let start = 0; start < transcript.lines.length;) {
 		signal?.throwIfAborted();
-		const source = transcript.sources?.[index];
+		const source = transcript.sources?.[start];
+		let end = start + 1;
+		// Source object identity denotes an entry; IDs may be absent or duplicated.
+		while (source && end < transcript.lines.length && transcript.sources?.[end] === source) {
+			signal?.throwIfAborted();
+			end++;
+		}
+		const entryStartLine = start + 1, entryEndLine = end;
+		const first = start;
+		start = end;
 		if (options.kind && source?.kind !== options.kind) continue;
-		const match = findMatch(transcript.lines[index]!, foldedQuery, signal);
-		if (!match) continue;
-		if (matches.length >= maxMatches) return { ok: false, error: `Search is too broad: more than ${maxMatches} matching session lines. Use a more specific query or kind filter. No partial matches returned.` };
-		const hit: Hit = { line: index + 1, ...match, source };
-		hits.push(hit);
-		let text = `${hit.line}: ${preview(transcript.lines[index]!, match, signal)}`;
-		if (source) text += `\nSource: ${source.header}; match columns ${match.startColumn}–${match.endColumn}`;
-		renderedLines++;
-		for (let j = Math.max(0, index - (options.context_lines ?? 0)); j <= Math.min(transcript.lines.length - 1, index + (options.context_lines ?? 0)); j++) {
-			if (j === index || (source && transcript.sources?.[j] !== source)) continue;
-			text += `\nContext ${j + 1}: ${preview(transcript.lines[j]!, undefined, signal)}`;
+		let mask = 0;
+		for (let row = first; anchors.length && mask !== (1 << anchors.length) - 1 && row < end; row++) {
+			signal?.throwIfAborted();
+			const folded = transcript.lines[row]!.toLowerCase();
+			for (let a = 0; a < anchors.length; a++) if (folded.includes(anchors[a]!)) mask |= 1 << a;
+		}
+		if (mask !== (1 << anchors.length) - 1) continue;
+		for (let index = first; index < end; index++) {
+			signal?.throwIfAborted();
+			const match = findMatch(transcript.lines[index]!, foldedQuery, signal);
+			if (!match) continue;
+			if (matches.length >= maxMatches) return { ok: false, error: `Search is too broad: more than ${maxMatches} matching session lines. Add a distinctive literal anchor in all_of or a kind filter. No partial matches returned.` };
+			const hit: Hit = { line: index + 1, ...match, source, entryStartLine, entryEndLine };
+			hits.push(hit);
+			let text = `${hit.line}: ${preview(transcript.lines[index]!, match, signal)}`;
+			if (source) text += `\nSource: ${source.header}; entry lines ${entryStartLine}–${entryEndLine}; match columns ${match.startColumn}–${match.endColumn}`;
 			renderedLines++;
+			for (let j = Math.max(0, index - (options.context_lines ?? 0)); j <= Math.min(transcript.lines.length - 1, index + (options.context_lines ?? 0)); j++) {
+				if (j === index || (source && transcript.sources?.[j] !== source)) continue;
+				text += `\nContext ${j + 1}: ${preview(transcript.lines[j]!, undefined, signal)}`;
+				renderedLines++;
+			}
+			bytes += Buffer.byteLength(text, "utf8") + 1;
+			if (bytes > MAX_GREP_BYTES - METADATA_RESERVE || renderedLines > MAX_READ_LINES) {
+				return { ok: false, error: "Search is too broad: matches/context exceed the 8 KiB / 50 transcript-line output budget. Add an all_of anchor or kind filter, or reduce context_lines. No partial matches returned." };
+			}
+			matches.push(text);
 		}
-		bytes += Buffer.byteLength(text, "utf8") + 1;
-		if (bytes > MAX_GREP_BYTES - METADATA_RESERVE || renderedLines > MAX_READ_LINES) {
-			return { ok: false, error: "Search is too broad: matches/context exceed the 8 KiB / 50 transcript-line output budget. Use a more specific query, kind filter, or less context. No partial matches returned." };
-		}
-		matches.push(text);
 	}
 	return { ok: true, matches, hits };
 }

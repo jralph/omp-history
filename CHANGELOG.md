@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Narrow recovery guidance to specific missing decisions, rationale, errors or
+  costly prior results, with a default search/read pair and one corrected retry.
+- Add optional same-entry literal `all_of` anchors and entry line bounds to grep;
+  preserve literal matching, global addresses, clear/privacy boundaries and budgets.
+- Explicitly emit `strict: false` so Responses tools retain optional parameters;
+  retain local validators and clarify ordinary-line versus character-excerpt errors.
+- Extend the benchmark with matched previous/revised/no-history conditions,
+  source fingerprints and failed-arm/argument-shape diagnostics. Publish complete
+  aggregate evidence, including the unsuccessful intermediate run.
 - Add an explicitly opt-in, isolated, actual OMP CLI benchmark for paired
   post-compaction recovery; routine tests and CI remain model-free.
 - Publish aggregate experimental evidence and concise human-facing findings,

@@ -24,6 +24,7 @@ test("actual OMP loader and adapter register read-only essential tools", () => {
  for(const registered of loaded.extensions[0].tools.values()) {
   expect(registered.definition.approval).toBe("read");
   expect(registered.definition.loadMode).toBe("essential");
+  expect(registered.definition.strict).toBe(false);
  }
 });
 test("explicit package discovery loads only the entry point, never test/helper modules", async () => {
@@ -58,6 +59,16 @@ const { SessionManager } = await import(join(root, "src/session/session-manager.
 function realTool(name: string, manager: RuntimeSessionManager) {
  return new RegisteredToolAdapter(loaded.extensions[0].tools.get(name), { createContext: () => ({ sessionManager: manager }) });
 }
+test("real adapter narrows entries with all_of and reads the returned entry bounds", async () => {
+ const manager: RuntimeSessionManager = SessionManager.inMemory("/tmp/omp-history-synthetic");
+ manager.appendMessage({role:"user",content:"migration brief requested",timestamp:1});
+ manager.appendMessage({role:"assistant",content:[{type:"text",text:"Migration brief\nrollback: exact decision"}],api:"openai-responses",provider:"openai",model:"synthetic",usage:{input:0,output:0,cacheRead:0,cacheWrite:0,totalTokens:0,cost:{input:0,output:0,cacheRead:0,cacheWrite:0,total:0}},stopReason:"stop",timestamp:2});
+ const found = await realTool("session_grep",manager).execute("call",{query:"migration brief",kind:"assistant",all_of:["rollback"]});
+ expect(found.details.matchCount).toBe(1);
+ const hit = found.details.hits[0];
+ const read = await realTool("session_read",manager).execute("call",{snapshot:found.details.snapshot,start_line:hit.entryStartLine,line_count:hit.entryEndLine-hit.entryStartLine+1});
+ expect(read.content[0].text).toContain("rollback: exact decision");
+});
 test("real in-memory session: active branches, compaction, appends, and clear boundaries", async () => {
  const manager: RuntimeSessionManager = SessionManager.inMemory("/tmp/omp-history-synthetic");
  const first = manager.appendMessage({role:"user",content:"original needle",timestamp:1});
@@ -104,11 +115,33 @@ test("malformed references and read options fail before accessing the branch", a
  ]) await expect(read.execute("call",params)).rejects.toThrow();
  expect(calls).toBe(0);
 });
+test("invalid anchors fail before actual adapter accesses the branch", async () => {
+ let calls = 0;
+ const grep = new RegisteredToolAdapter(loaded.extensions[0].tools.get("session_grep"), {createContext:()=>({sessionManager:{getBranch:()=>{calls++;throw new Error("must not access branch")}}})});
+ for (const all_of of [[], [" "], ["a\nb"], ["a","b","c","d"]]) await expect(grep.execute("call",{query:"needle",all_of})).rejects.toThrow("all_of");
+ expect(calls).toBe(0);
+});
+test("actual Codex serializer emits strict:false and preserves optional read fields", async () => {
+ const { convertOpenAICodexResponsesTools } = await import("@oh-my-pi/pi-ai/providers/openai-codex-responses");
+ const adapter = tool("session_read");
+ expect(adapter.strict).toBe(false);
+ const [payload] = convertOpenAICodexResponsesTools([adapter], {applyPatchToolType:"function"} as never);
+ expect(payload.type).toBe("function");
+ if (payload.type !== "function") return;
+ expect(payload.strict).toBe(false);
+ expect(payload.parameters.required).toContain("snapshot");
+ expect(payload.parameters.required).toContain("start_line");
+ expect(payload.parameters.required).not.toContain("start_column");
+ expect(payload.parameters.required).not.toContain("char_count");
+});
 test("actual OMP schemas accept optional parameters and reject invalid values", () => {
  const grep = loaded.extensions[0].tools.get("session_grep").definition.parameters;
  const read = loaded.extensions[0].tools.get("session_read").definition.parameters;
  expect(grep.safeParse({query:"needle"}).success).toBe(true);
  expect(grep.safeParse({query:"needle",kind:"user",context_lines:3}).success).toBe(true);
+ expect(grep.safeParse({query:"needle",all_of:["rollback"]}).success).toBe(true);
+ expect(grep.safeParse({query:"needle",all_of:[]}).success).toBe(false);
+ expect(grep.safeParse({query:"needle",all_of:["a","b","c","d"]}).success).toBe(false);
  expect(grep.safeParse({query:"needle",kind:"unknown"}).success).toBe(false);
  expect(grep.safeParse({query:"needle",context_lines:4}).success).toBe(false);
  const snapshot = "v3:0:"+"a".repeat(64);

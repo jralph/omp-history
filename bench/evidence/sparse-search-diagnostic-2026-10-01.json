@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 1,
+  "workload": "linked-registry-v1",
+  "createdAt": "2026-10-01T16:16:55.158Z",
+  "model": "openai-codex/gpt-5.5",
+  "thinking": "low",
+  "compaction": "controlled",
+  "seed": "omp-history-linked-registry-v1",
+  "requestedTrials": 3,
+  "runtimeVersion": "18.4.4",
+  "extensionVersion": "0.3.0",
+  "extensionSourceSha256": "f1edea2fc09459d64108a604ceaecd46be1223dbb42b029dfc4937004bb8066d",
+  "previousExtensionSourceSha256": "5127cb6406b3413b0a3ab583fd654d0ca5d9bf61313a5d6a4881a7ccb11da2c0",
+  "notes": [
+    "Synthetic paired experiment; not a population estimate.",
+    "Fixed lossy summary in controlled mode; natural mode keeps OMP's summarizer.",
+    "Shared seed investigation is reported separately, not charged twice.",
+    "Input excludes separately reported cacheRead/cacheWrite; totalTokens is provider-reported.",
+    "Cost is OMP's catalog estimate, not an invoice. Timing excludes process startup.",
+    "Normal prompt caching remains enabled; arm order alternates.",
+    "Only aggregate measurements are exported; temporary sessions/homes are deleted."
+  ],
+  "trials": [
+    {
+      "trial": 1,
+      "fixtureSha256": "a2f50d0c84f9e508d8c14c355d2aa8cc07f7ac8e0f3b482a2b3bbd52e528a94d",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 17703,
+        "modelCalls": 5,
+        "toolCalls": 6,
+        "toolErrors": 0,
+        "toolOutputBytes": 7846,
+        "tools": {
+          "glob": 1,
+          "grep": 4,
+          "read": 1
+        },
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "input": 17283,
+        "output": 476,
+        "cacheRead": 53248,
+        "cacheWrite": 0,
+        "totalTokens": 71007,
+        "estimatedCostUsd": 0.12731900000000002,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "baseline": {
+          "elapsedMs": 17065,
+          "modelCalls": 5,
+          "toolCalls": 9,
+          "toolErrors": 1,
+          "toolOutputBytes": 9571,
+          "tools": {
+            "grep": 4,
+            "glob": 1,
+            "read": 4
+          },
+          "errorCategories": {
+            "other": 1
+          },
+          "errorTools": {
+            "read": 1
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "input": 14054,
+          "output": 642,
+          "cacheRead": 11264,
+          "cacheWrite": 0,
+          "totalTokens": 25960,
+          "estimatedCostUsd": 0.095162,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        },
+        "previous_history": {
+          "elapsedMs": 39124,
+          "modelCalls": 11,
+          "toolCalls": 11,
+          "toolErrors": 5,
+          "toolOutputBytes": 7850,
+          "tools": {
+            "session_grep": 1,
+            "session_read": 5,
+            "glob": 1,
+            "grep": 4
+          },
+          "errorCategories": {
+            "excerpt_arguments": 5
+          },
+          "errorTools": {
+            "session_read": 5
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 5,
+            "different": 0,
+            "unknown": 0
+          },
+          "input": 11131,
+          "output": 1020,
+          "cacheRead": 47616,
+          "cacheWrite": 0,
+          "totalTokens": 59767,
+          "estimatedCostUsd": 0.11006300000000001,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "history": {
+          "elapsedMs": 40538,
+          "modelCalls": 12,
+          "toolCalls": 12,
+          "toolErrors": 5,
+          "toolOutputBytes": 10639,
+          "tools": {
+            "session_grep": 1,
+            "session_read": 6,
+            "grep": 4,
+            "read": 1
+          },
+          "errorCategories": {
+            "excerpt_arguments": 5
+          },
+          "errorTools": {
+            "session_read": 5
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 6,
+            "different": 0,
+            "unknown": 0
+          },
+          "input": 15096,
+          "output": 1131,
+          "cacheRead": 52736,
+          "cacheWrite": 0,
+          "totalTokens": 68963,
+          "estimatedCostUsd": 0.135778,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        }
+      },
+      "compactionMs": 11,
+      "compactionUsage": {
+        "elapsedMs": 11,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "toolErrors": 0,
+        "toolOutputBytes": 0,
+        "tools": {},
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0
+      },
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "0ae00399977c43401d61d31d004953996ee7186e5654397c10730941ac0fac70",
+      "armOrder": [
+        "baseline",
+        "previous_history",
+        "history"
+      ]
+    },
+    {
+      "trial": 2,
+      "fixtureSha256": "de4f783b752d0d7879d29cdca173bf6187de775bf62eefade8ef46edb24868f1",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 22995,
+        "modelCalls": 6,
+        "toolCalls": 9,
+        "toolErrors": 0,
+        "toolOutputBytes": 10098,
+        "tools": {
+          "grep": 4,
+          "glob": 1,
+          "read": 4
+        },
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "input": 18028,
+        "output": 571,
+        "cacheRead": 70656,
+        "cacheWrite": 0,
+        "totalTokens": 89255,
+        "estimatedCostUsd": 0.14259800000000003,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {},
+      "compactionMs": 11,
+      "compactionUsage": {
+        "elapsedMs": 11,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "toolErrors": 0,
+        "toolOutputBytes": 0,
+        "tools": {},
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0
+      },
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "8c3eb41f8be296f3190653da28db3abd374679bb16ecd3767ea041864421e2b8",
+      "armOrder": [
+        "previous_history",
+        "history",
+        "baseline"
+      ]
+    }
+  ],
+  "failure": "prompt_not_completed"
+}

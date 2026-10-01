@@ -17,6 +17,11 @@ bun run bench --model openai-codex/gpt-5.5 --trials 3 \
 Other options: `--seed <public-identifier>`, `--timeout-seconds <10–600>`
 (default 180), and `--compaction controlled|natural` (default controlled).
 Trials are limited to 1–10. Use an exact `provider/model`, never OpenRouter.
+To compare a previous implementation on the same seed sessions, add
+`--previous-extension /path/to/previous/index.ts`. Its `transcript.ts` and
+`snapshot.ts` siblings must also exist. This adds a third condition; order rotates
+so each condition occupies each position once across three trials. Only load
+trusted extension code. Source checksums are recorded without exporting paths.
 Outputs contain the seed; do not put secrets in it. Report paths must end in
 `.json`; existing files are not overwritten. The default output is timestamped
 under `bench-results/`. Use `bun run bench --help` for a short option reference.
@@ -45,6 +50,11 @@ under `bench-results/`. Use `bun run bench --help` for a short option reference.
    elapsed time, completed model messages, requested tool calls, tool errors,
    text-result bytes, provider-reported input/output/cache/total tokens, and
    OMP's estimated cost. Common investigation/compaction is reported separately.
+
+Timed-out/budget-exhausted follow-up arms retain their spent-call measurements
+and are marked `completed: false`, with no completed-answer credit; other arms
+continue. Model mismatches and the run-wide estimated-cost cap still abort the
+experiment. No failed arm is silently discarded.
 
 The agent is **not forced to use history**. Skipping it, unsuccessful calls,
 partial answers, and redoing source lookups are outcomes, not exclusions.
@@ -79,10 +89,16 @@ Each model phase times out and stops at more than 16 tool calls or 18 completed
 model messages. The run aborts above $5 of reported catalog-estimated cost,
 checked **after** completed calls. This is not a hard billing cap; in-flight work,
 provider billing and incomplete usage reports can exceed estimates. Prompt
-caching remains enabled and cached tokens are reported separately. Elapsed time
+caching remains enabled and cached tokens are reported separately. History tools
+are disabled in the shared seed investigation: these comparisons measure
+post-compaction follow-ups, **not total conversation-lifetime overhead**. Keeping
+the tools always enabled before compaction could erase the small estimated
+cost saving observed below. Elapsed time
 excludes process startup and includes response collection.
 
 ## Recorded evidence
+
+### Initial implementation
 
 [Three paired trials, 2026-10-01](evidence/controlled-2026-10-01.json), using
 `openai-codex/gpt-5.5`, low thinking, OMP 18.4.4 and extension 0.3.0:
@@ -116,3 +132,69 @@ possible here; user-only decisions may have no such alternative. This experiment
 does not quantify that separate benefit or any savings from real-world usage.
 The archived report predates the addition of the separate `compactionUsage`
 field; its controlled compactions used the hook, with no summarizer call.
+
+### Revised instructions/search and optional-argument fix
+
+[Fresh three-way comparison, 2026-10-01](evidence/sparse-search-2026-10-01.json):
+same three deterministic workloads, model, low thinking and controlled omission.
+Previous source was frozen from commit `8ce9f28`; revised source is identified by
+`extensionSourceSha256` (unreleased changes, not a new 0.3.0 release).
+
+| Follow-up total (3 tasks) | No history | Previous history | Revised history |
+| --- | ---: | ---: | ---: |
+| Completed tasks | 3/3 | 2/3 | 3/3 |
+| Completed-answer exact fields | 24/24 | 16/24 | 24/24 |
+| Model calls | 17 | 26 | 12 |
+| Tool calls | 15 | 34 | 10 |
+| Tool errors | 0 | 11 | 0 |
+| Uncached input tokens | 19,258 | 38,719 | 20,703 |
+| Cache-read tokens | 54,784 | 93,696 | 41,472 |
+| Output tokens | 1,310 | 3,058 | 1,101 |
+| Reported total tokens | 75,352 | 135,473 | 63,276 |
+| Elapsed time | 50.2 s | 92.8 s | 42.2 s |
+| Catalog-estimated cost, not billing | $0.163 | $0.332 | $0.157 |
+
+Revised history used one successful search/read pair in tasks 1 and 2. Task 3
+skipped history, used six model calls versus baseline's five, and took longer.
+Across all three, revised history used about 29% fewer model calls, 16% fewer
+reported total tokens and 16% less elapsed time than baseline. **Uncached input
+rose about 8%; estimated cost fell only about 3.5%.** Cached-token totals are not
+billing-equivalent. This remains a small, provisional result with no baseline
+accuracy gain; it is not universal savings or a statistically established effect.
+The previous implementation exhausted its phase tool-call budget in task 3;
+its spent measurements remain included rather than dropping that failure.
+
+Diagnostics identified invalid multi-line character-excerpt arguments, not
+incorrectly copied snapshots: ten previous-arm calls had multi-line character
+fields and errored; revised successful reads omitted character fields. Both tool
+definitions now explicitly emit `strict: false`, preserving optional fields in
+the actual Codex serializer, while local validators still enforce all budgets.
+This addresses Responses interfaces that can otherwise normalize optional fields
+into required ones. Improved guidance, same-entry literal anchors and entry line
+ranges were changed together; this is **not an ablation proving which change
+caused the measured improvement**, nor proof that `all_of` alone saved work.
+
+[The preceding diagnostic run](evidence/sparse-search-diagnostic-2026-10-01.json)
+had one completed three-way task before interruption in the old arm of task 2.
+Instructions/search changes without the explicit optional-argument fix still
+produced five excerpt-argument errors in its revised arm. That incomplete run is
+published for transparency, not pooled into the completed comparison. Its runner
+predated failed-arm metric preservation, so the interrupted arm's spent metrics
+are unavailable in that artifact.
+
+To reproduce the previous source without changing your checkout:
+
+```bash
+previous=$(mktemp -d)
+for file in index.ts transcript.ts snapshot.ts; do
+  git show 8ce9f28:"$file" > "$previous/$file"
+done
+bun run bench --model openai-codex/gpt-5.5 --trials 3 \
+  --previous-extension "$previous/index.ts" --allow-model-calls \
+  --output bench-results/comparison.json
+rm -r "$previous"
+```
+
+Normal model-free tests additionally exercise same-entry isolation, reused IDs,
+clear/hidden-content boundaries, literal Unicode anchors, invalid inputs,
+unchanged output limits, and the real runtime's `strict: false` wire encoding.

@@ -1,0 +1,637 @@
+{
+  "schemaVersion": 1,
+  "workload": "linked-registry-v1",
+  "createdAt": "2026-10-01T16:29:14.991Z",
+  "model": "openai-codex/gpt-5.5",
+  "thinking": "low",
+  "compaction": "controlled",
+  "seed": "omp-history-linked-registry-v1",
+  "requestedTrials": 3,
+  "runtimeVersion": "18.4.4",
+  "extensionVersion": "0.3.0",
+  "extensionSourceSha256": "de30c0665fc186c0c779208d38aacf3dd2d14302282ae8dfe44108ee831e7663",
+  "previousExtensionSourceSha256": "5127cb6406b3413b0a3ab583fd654d0ca5d9bf61313a5d6a4881a7ccb11da2c0",
+  "notes": [
+    "Synthetic paired experiment; not a population estimate.",
+    "Fixed lossy summary in controlled mode; natural mode keeps OMP's summarizer.",
+    "Shared seed investigation is reported separately, not charged twice.",
+    "Input excludes separately reported cacheRead/cacheWrite; totalTokens is provider-reported.",
+    "Cost is OMP's catalog estimate, not an invoice. Timing excludes process startup.",
+    "Normal prompt caching remains enabled; arm order alternates.",
+    "Only aggregate measurements are exported; temporary sessions/homes are deleted."
+  ],
+  "trials": [
+    {
+      "trial": 1,
+      "fixtureSha256": "a2f50d0c84f9e508d8c14c355d2aa8cc07f7ac8e0f3b482a2b3bbd52e528a94d",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 13679,
+        "modelCalls": 5,
+        "toolCalls": 4,
+        "toolErrors": 0,
+        "toolOutputBytes": 4628,
+        "tools": {
+          "grep": 4
+        },
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 15185,
+        "output": 380,
+        "cacheRead": 50688,
+        "cacheWrite": 0,
+        "totalTokens": 66253,
+        "estimatedCostUsd": 0.112669,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "baseline": {
+          "elapsedMs": 17401,
+          "modelCalls": 6,
+          "toolCalls": 5,
+          "toolErrors": 0,
+          "toolOutputBytes": 6507,
+          "tools": {
+            "grep": 4,
+            "read": 1
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {},
+          "input": 6712,
+          "output": 447,
+          "cacheRead": 19456,
+          "cacheWrite": 0,
+          "totalTokens": 26615,
+          "estimatedCostUsd": 0.05669800000000001,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        },
+        "previous_history": {
+          "elapsedMs": 19895,
+          "modelCalls": 6,
+          "toolCalls": 6,
+          "toolErrors": 1,
+          "toolOutputBytes": 9210,
+          "tools": {
+            "grep": 5,
+            "read": 1
+          },
+          "errorCategories": {
+            "other": 1
+          },
+          "errorTools": {
+            "grep": 1
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {},
+          "input": 14263,
+          "output": 491,
+          "cacheRead": 22528,
+          "cacheWrite": 0,
+          "totalTokens": 37282,
+          "estimatedCostUsd": 0.097309,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "history": {
+          "elapsedMs": 11826,
+          "modelCalls": 3,
+          "toolCalls": 2,
+          "toolErrors": 0,
+          "toolOutputBytes": 1444,
+          "tools": {
+            "session_grep": 1,
+            "session_read": 1
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 1,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {
+            "ordinary_no_characters": 1
+          },
+          "input": 4913,
+          "output": 290,
+          "cacheRead": 7168,
+          "cacheWrite": 0,
+          "totalTokens": 12371,
+          "estimatedCostUsd": 0.03684900000000001,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        }
+      },
+      "compactionMs": 13,
+      "compactionUsage": {
+        "elapsedMs": 13,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "toolErrors": 0,
+        "toolOutputBytes": 0,
+        "tools": {},
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0
+      },
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "4efae628cd99ffd769bb6124a5cf769ac692dbe359fe46c263b0606156dfd244",
+      "armOrder": [
+        "baseline",
+        "previous_history",
+        "history"
+      ]
+    },
+    {
+      "trial": 2,
+      "fixtureSha256": "de4f783b752d0d7879d29cdca173bf6187de775bf62eefade8ef46edb24868f1",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 13160,
+        "modelCalls": 5,
+        "toolCalls": 5,
+        "toolErrors": 0,
+        "toolOutputBytes": 6178,
+        "tools": {
+          "grep": 4,
+          "glob": 1
+        },
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 15757,
+        "output": 431,
+        "cacheRead": 52736,
+        "cacheWrite": 0,
+        "totalTokens": 68924,
+        "estimatedCostUsd": 0.11808300000000001,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "previous_history": {
+          "elapsedMs": 29000,
+          "modelCalls": 10,
+          "toolCalls": 9,
+          "toolErrors": 6,
+          "toolOutputBytes": 3019,
+          "tools": {
+            "session_grep": 3,
+            "session_read": 6
+          },
+          "errorCategories": {
+            "excerpt_arguments": 6
+          },
+          "errorTools": {
+            "session_read": 6
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 6,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {
+            "multi_line_with_characters": 6
+          },
+          "input": 12500,
+          "output": 900,
+          "cacheRead": 34304,
+          "cacheWrite": 0,
+          "totalTokens": 47704,
+          "estimatedCostUsd": 0.10665200000000002,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "history": {
+          "elapsedMs": 9823,
+          "modelCalls": 3,
+          "toolCalls": 2,
+          "toolErrors": 0,
+          "toolOutputBytes": 1554,
+          "tools": {
+            "session_grep": 1,
+            "session_read": 1
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 1,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {
+            "ordinary_no_characters": 1
+          },
+          "input": 4949,
+          "output": 290,
+          "cacheRead": 7168,
+          "cacheWrite": 0,
+          "totalTokens": 12407,
+          "estimatedCostUsd": 0.037029,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "baseline": {
+          "elapsedMs": 14949,
+          "modelCalls": 6,
+          "toolCalls": 5,
+          "toolErrors": 0,
+          "toolOutputBytes": 7376,
+          "tools": {
+            "grep": 4,
+            "read": 1
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {},
+          "input": 7061,
+          "output": 418,
+          "cacheRead": 20480,
+          "cacheWrite": 0,
+          "totalTokens": 27959,
+          "estimatedCostUsd": 0.058085,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        }
+      },
+      "compactionMs": 13,
+      "compactionUsage": {
+        "elapsedMs": 13,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "toolErrors": 0,
+        "toolOutputBytes": 0,
+        "tools": {},
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0
+      },
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "9acdf10bf1d702f5aa34bf41ad8321c0c93dbde68454f3361ea9078c6346e57c",
+      "armOrder": [
+        "previous_history",
+        "history",
+        "baseline"
+      ]
+    },
+    {
+      "trial": 3,
+      "fixtureSha256": "6a63835d236c8730daac5c571264b512aeef5b9aa09bf30ba89a9a21c2681c69",
+      "fixtureFiles": 128,
+      "fixtureBytes": 998040,
+      "initialPromptBytes": 47948,
+      "seed": {
+        "elapsedMs": 15523,
+        "modelCalls": 5,
+        "toolCalls": 4,
+        "toolErrors": 0,
+        "toolOutputBytes": 4628,
+        "tools": {
+          "grep": 4
+        },
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 15269,
+        "output": 377,
+        "cacheRead": 50688,
+        "cacheWrite": 0,
+        "totalTokens": 66334,
+        "estimatedCostUsd": 0.112999,
+        "score": {
+          "correct": 8,
+          "total": 8,
+          "allCorrect": true
+        }
+      },
+      "eligible": true,
+      "arms": {
+        "history": {
+          "elapsedMs": 20570,
+          "modelCalls": 6,
+          "toolCalls": 6,
+          "toolErrors": 0,
+          "toolOutputBytes": 10166,
+          "tools": {
+            "grep": 5,
+            "read": 1
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {},
+          "input": 10841,
+          "output": 521,
+          "cacheRead": 27136,
+          "cacheWrite": 0,
+          "totalTokens": 38498,
+          "estimatedCostUsd": 0.083403,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        },
+        "baseline": {
+          "elapsedMs": 17896,
+          "modelCalls": 5,
+          "toolCalls": 5,
+          "toolErrors": 0,
+          "toolOutputBytes": 5287,
+          "tools": {
+            "grep": 5
+          },
+          "errorCategories": {},
+          "errorTools": {},
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 0,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {},
+          "input": 5485,
+          "output": 445,
+          "cacheRead": 14848,
+          "cacheWrite": 0,
+          "totalTokens": 20778,
+          "estimatedCostUsd": 0.048199000000000006,
+          "completed": true,
+          "score": {
+            "correct": 8,
+            "total": 8,
+            "allCorrect": true
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read"
+          ]
+        },
+        "previous_history": {
+          "elapsedMs": 43901,
+          "modelCalls": 10,
+          "toolCalls": 19,
+          "toolErrors": 4,
+          "toolOutputBytes": 8656,
+          "tools": {
+            "session_grep": 1,
+            "grep": 4,
+            "session_read": 14
+          },
+          "errorCategories": {
+            "excerpt_arguments": 4
+          },
+          "errorTools": {
+            "session_read": 4
+          },
+          "nullOptionalArguments": {},
+          "readSnapshotCopies": {
+            "exact": 14,
+            "different": 0,
+            "unknown": 0
+          },
+          "readArgumentShapes": {
+            "multi_line_with_characters": 4,
+            "single_line_with_characters": 10
+          },
+          "input": 11956,
+          "output": 1667,
+          "cacheRead": 36864,
+          "cacheWrite": 0,
+          "totalTokens": 50487,
+          "estimatedCostUsd": 0.128222,
+          "completed": false,
+          "failure": "phase_budget_exhausted",
+          "score": {
+            "correct": 0,
+            "total": 8,
+            "allCorrect": false
+          },
+          "activeTools": [
+            "glob",
+            "grep",
+            "read",
+            "session_grep",
+            "session_read"
+          ]
+        }
+      },
+      "compactionMs": 11,
+      "compactionUsage": {
+        "elapsedMs": 11,
+        "modelCalls": 0,
+        "toolCalls": 0,
+        "toolErrors": 0,
+        "toolOutputBytes": 0,
+        "tools": {},
+        "errorCategories": {},
+        "errorTools": {},
+        "nullOptionalArguments": {},
+        "readSnapshotCopies": {
+          "exact": 0,
+          "different": 0,
+          "unknown": 0
+        },
+        "readArgumentShapes": {},
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0
+      },
+      "missingFields": [
+        "endpoint",
+        "region",
+        "queue",
+        "retryPolicy",
+        "owner",
+        "timeoutPolicy",
+        "rollbackCode",
+        "checksum"
+      ],
+      "compactedContextBytes": 450,
+      "compactedContextSha256": "1a4bd6972c2d3430d21fd652e9e50d0916c3905b4bd9ec580274a627fdd45d08",
+      "armOrder": [
+        "history",
+        "baseline",
+        "previous_history"
+      ]
+    }
+  ],
+  "failure": null
+}

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
 import { fixture, keys, missingFacts, score, summary, tail } from "./fixture";
 import { permittedPath } from "./control";
-import { options, addUsage, emptyMetrics } from "./run";
+import { options, addUsage, emptyMetrics, classifyToolError, readArgumentShape } from "./run";
 
 describe("model-free benchmark checks", () => {
 	test("deterministic fixture has a four-record evidence chain and no prompt answer leakage", () => {
@@ -60,6 +60,49 @@ describe("model-free benchmark checks", () => {
 		expect(readme).toContain(`${totals.history.totalTokens.toLocaleString("en-US")} vs ${totals.baseline.totalTokens.toLocaleString("en-US")} reported total tokens`);
 		const serialized = JSON.stringify(evidence);
 		for (const forbidden of ['"sessionFile":', '"messages":', '"arguments":', '"content":', '"access_token":', '"refresh_token":', "Bearer ", "/home/"]) expect(serialized).not.toContain(forbidden);
+	});
+	test("revised three-way evidence retains failed arms and matches the README", async () => {
+		const evidence = await Bun.file(resolve(import.meta.dir, "evidence/sparse-search-2026-10-01.json")).json();
+		const readme = (await Bun.file(resolve(import.meta.dir, "../README.md")).text()).replace(/\s+/g, " ");
+		expect(evidence.failure).toBeNull();
+		expect(evidence.trials).toHaveLength(3);
+		const totals = { history: emptyMetrics(), baseline: emptyMetrics() };
+		for (const trial of evidence.trials) {
+			expect(trial.eligible).toBe(true);
+			expect(trial.missingFields).toEqual([...keys]);
+			for (const name of ["history", "baseline"] as const) {
+				const arm = trial.arms[name];
+				expect(arm.completed).toBe(true);
+				expect(arm.score.correct).toBe(8);
+				expect(arm.toolErrors).toBe(0);
+				totals[name].modelCalls += arm.modelCalls;
+				totals[name].totalTokens += arm.totalTokens;
+			}
+		}
+		const failed = evidence.trials[2].arms.previous_history;
+		expect(failed.completed).toBe(false);
+		expect(failed.failure).toBe("phase_budget_exhausted");
+		expect(failed.toolCalls).toBeGreaterThan(16);
+		expect(failed.totalTokens).toBeGreaterThan(0);
+		expect(failed.score.correct).toBe(0);
+		expect(evidence.trials[1].arms.previous_history.errorCategories.excerpt_arguments).toBe(6);
+		expect(evidence.trials[1].arms.history.readArgumentShapes.ordinary_no_characters).toBe(1);
+		expect(readme).toContain(`${totals.history.modelCalls} vs ${totals.baseline.modelCalls} model calls`);
+		expect(readme).toContain(`${totals.history.totalTokens.toLocaleString("en-US")} vs ${totals.baseline.totalTokens.toLocaleString("en-US")} reported total tokens`);
+		for (const file of ["sparse-search-2026-10-01.json", "sparse-search-diagnostic-2026-10-01.json"]) {
+			const text = await Bun.file(resolve(import.meta.dir, "evidence", file)).text();
+			for (const forbidden of ['"sessionFile":', '"messages":', '"arguments":', '"content":', '"access_token":', '"refresh_token":', "Bearer ", "/home/"]) expect(text).not.toContain(forbidden);
+		}
+	});
+	test("diagnostics classify actionable read errors without exporting raw error text", () => {
+		expect(classifyToolError("For a character excerpt supply line_count=1, start_column>=1")).toBe("excerpt_arguments");
+		expect(classifyToolError("Session or transcript changed. Run session_grep again.")).toBe("snapshot_changed");
+		expect(classifyToolError("Requested 60 session lines; maximum is 50.")).toBe("line_range");
+		expect(classifyToolError("Unknown private error text")).toBe("other");
+		expect(readArgumentShape({line_count:12,start_column:1,char_count:4096})).toBe("multi_line_with_characters");
+		expect(readArgumentShape({line_count:12})).toBe("ordinary_no_characters");
+		expect(readArgumentShape({line_count:1,start_column:1,char_count:100})).toBe("single_line_with_characters");
+		expect(options(["--model", "openai-codex/gpt-5.5", "--dry-run", "--previous-extension", "/tmp/previous/index.ts"]).previousExtension).toBe("/tmp/previous/index.ts");
 	});
 	test("keeps cached and uncached provider tokens separate", () => {
 		const m = emptyMetrics();

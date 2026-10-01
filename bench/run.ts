@@ -10,7 +10,7 @@ import { fixture, writeFixture, score, missingFacts, keys } from "./fixture";
 
 export interface Options {
 	model: string; trials: number; seed: string; timeoutSeconds: number;
-	compaction: "controlled" | "natural"; output: string; live: boolean; dryRun: boolean;
+	compaction: "controlled" | "natural"; output: string; live: boolean; dryRun: boolean; previousExtension?: string;
 }
 export function options(args: string[]): Options {
 	const o: Options = { model: "", trials: 3, seed: "omp-history-linked-registry-v1", timeoutSeconds: 180, compaction: "controlled", output: `bench-results/${new Date().toISOString().replace(/[:.]/g, "-")}.json`, live: false, dryRun: false };
@@ -26,6 +26,7 @@ export function options(args: string[]): Options {
 		else if (a === "--seed") o.seed = v;
 		else if (a === "--timeout-seconds") o.timeoutSeconds = Number(v);
 		else if (a === "--output") o.output = v;
+		else if (a === "--previous-extension") o.previousExtension = resolve(v);
 		else if (a === "--compaction" && (v === "controlled" || v === "natural")) o.compaction = v;
 		else throw new Error("Unknown benchmark option");
 	}
@@ -38,15 +39,39 @@ export function options(args: string[]): Options {
 }
 
 export function emptyMetrics() {
-	return { elapsedMs: 0, modelCalls: 0, toolCalls: 0, toolErrors: 0, toolOutputBytes: 0, tools: {} as Record<string, number>, errorCategories: {} as Record<string, number>, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, estimatedCostUsd: 0 };
+	return { elapsedMs: 0, modelCalls: 0, toolCalls: 0, toolErrors: 0, toolOutputBytes: 0, tools: {} as Record<string, number>, errorCategories: {} as Record<string, number>, errorTools: {} as Record<string, number>, nullOptionalArguments: {} as Record<string, number>, readSnapshotCopies: { exact: 0, different: 0, unknown: 0 }, readArgumentShapes: {} as Record<string, number>, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, estimatedCostUsd: 0 };
 }
 export type Metrics = ReturnType<typeof emptyMetrics>;
 export function addUsage(m: Metrics, usage: { input?: number; output?: number; cacheRead?: number; cacheWrite?: number; totalTokens?: number; cost?: { total?: number } }) {
 	for (const key of ["input", "output", "cacheRead", "cacheWrite", "totalTokens"] as const) m[key] += usage[key] ?? 0;
 	m.estimatedCostUsd += usage.cost?.total ?? 0;
 }
+export function readArgumentShape(args: Record<string, unknown>): string {
+	const column = args.start_column, count = args.char_count;
+	if (column === undefined && count === undefined) return "ordinary_no_characters";
+	if (column === 0 && count === 0) return "zero_character_pair";
+	if ((args.line_count ?? 1) !== 1) return "multi_line_with_characters";
+	if (column === undefined || count === undefined) return "incomplete_character_pair";
+	return "single_line_with_characters";
+}
+export function classifyToolError(text: string): string {
+	if (text.includes("Session or transcript changed")) return "snapshot_changed";
+	if (text.includes("Invalid or stale history reference")) return "snapshot_invalid";
+	if (text.includes("For a character excerpt supply")) return "excerpt_arguments";
+	if (/Requested \d+ session lines; maximum|line_count must|start_line must|does not exist/.test(text)) return "line_range";
+	if (/32 KiB|read output budget/.test(text)) return "read_budget";
+	if (/[Ss]earch is too broad/.test(text)) return "search_budget";
+	if (/all_of must/.test(text)) return "anchor_arguments";
+	if (/[Vv]alidation|[Ii]nvalid.*[Aa]rgument|[Ss]chema|[Ss]napshot|[Tt]oo (big|small)|[Ee]xpected.*(number|string)/.test(text)) return "argument_validation";
+	if (/No such file|os error 2|not found/i.test(text)) return "not_found";
+	return "other";
+}
+const resultText = (result: any): string => typeof result === "string" ? result : (result?.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("\n");
+async function extensionHash(path: string) {
+	return digest(await Promise.all(["index.ts", "transcript.ts", "snapshot.ts"].map(name => readFile(name === "index.ts" ? path : resolve(path, "..", name), "utf8"))));
+}
 const digest = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
-class Failure extends Error { constructor(readonly code: string) { super(code); } }
+class Failure extends Error { constructor(readonly code: string, readonly metrics?: Metrics) { super(code); } }
 async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
 	let timer: ReturnType<typeof setTimeout>;
 	try { return await Promise.race([promise, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Failure("timeout")), milliseconds); })]); }
@@ -56,16 +81,18 @@ async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T>
 async function main(o: Options) {
 	if (o.dryRun) {
 		const f = fixture(`${o.seed}/0`);
-		console.log(JSON.stringify({ mode: "model-free-plan", model: o.model, trials: o.trials, compaction: o.compaction, fixtureFiles: Object.keys(f.files).length, fixtureBytes: f.bytes, initialPromptBytes: Buffer.byteLength(f.prompt), answerFields: keys.length, maxToolCallsPerPhase: 16, timeoutSeconds: o.timeoutSeconds }, null, 2));
+		console.log(JSON.stringify({ mode: "model-free-plan", model: o.model, trials: o.trials, conditions: o.previousExtension ? ["baseline", "previous_history", "history"] : ["baseline", "history"], compaction: o.compaction, fixtureFiles: Object.keys(f.files).length, fixtureBytes: f.bytes, initialPromptBytes: Buffer.byteLength(f.prompt), answerFields: keys.length, maxToolCallsPerPhase: 16, timeoutSeconds: o.timeoutSeconds }, null, 2));
 		return;
 	}
 	if (await Bun.file(resolve(o.output)).exists()) throw new Failure("output_already_exists");
 	const extensionVersion = (await Bun.file(resolve(import.meta.dir, "../package.json")).json()).version as string;
+	const extensionSourceSha256 = await extensionHash(resolve(import.meta.dir, "../index.ts"));
+	const previousExtensionSourceSha256 = o.previousExtension ? await extensionHash(o.previousExtension) : undefined;
 	// Do not route auth-broker diagnostics or secrets to logs/artifacts.
 	setTransports({ console: false, file: false });
 	const root = await mkdtemp(join(tmpdir(), "omp-history-bench-")); // mkdtemp creates mode 0700
 	const clients = new Set<RpcClient>();
-	const report = { schemaVersion: 1, workload: "linked-registry-v1", createdAt: new Date().toISOString(), model: o.model, thinking: "low", compaction: o.compaction, seed: o.seed, requestedTrials: o.trials, runtimeVersion: "", extensionVersion, notes: ["Synthetic paired experiment; not a population estimate.", "Fixed lossy summary in controlled mode; natural mode keeps OMP's summarizer.", "Shared seed investigation is reported separately, not charged twice.", "Input excludes separately reported cacheRead/cacheWrite; totalTokens is provider-reported.", "Cost is OMP's catalog estimate, not an invoice. Timing excludes process startup.", "Normal prompt caching remains enabled; arm order alternates.", "Only aggregate measurements are exported; temporary sessions/homes are deleted."], trials: [] as Array<Record<string, unknown>>, failure: null as string | null };
+	const report = { schemaVersion: 1, workload: "linked-registry-v1", createdAt: new Date().toISOString(), model: o.model, thinking: "low", compaction: o.compaction, seed: o.seed, requestedTrials: o.trials, runtimeVersion: "", extensionVersion, extensionSourceSha256, previousExtensionSourceSha256, notes: ["Synthetic paired experiment; not a population estimate.", "Fixed lossy summary in controlled mode; natural mode keeps OMP's summarizer.", "Shared seed investigation is reported separately, not charged twice.", "Input excludes separately reported cacheRead/cacheWrite; totalTokens is provider-reported.", "Cost is OMP's catalog estimate, not an invoice. Timing excludes process startup.", o.previousExtension ? "Normal prompt caching remains enabled; three-condition order rotates." : "Normal prompt caching remains enabled; arm order alternates.", "Only aggregate measurements are exported; temporary sessions/homes are deleted."], trials: [] as Array<Record<string, unknown>>, failure: null as string | null };
 	const save = async () => { await mkdir(resolve(o.output, ".."), { recursive: true }); await writeFile(resolve(o.output), `${JSON.stringify(report, null, 2)}\n`); };
 	let broker: ReturnType<typeof startAuthBroker> | undefined;
 	let auth: Awaited<ReturnType<typeof discoverAuthStorage>> | undefined;
@@ -80,12 +107,12 @@ async function main(o: Options) {
 		broker = startAuthBroker({ storage: auth, bind: "127.0.0.1:0", bearerTokens: [token], disableRefresher: true });
 		const config = join(root, "config.yml");
 		await writeFile(config, "disabledProviders: [openrouter]\nmemory:\n  backend: off\nproviders:\n  cacheWarming: off\ncompaction:\n  enabled: false\n  asyncEnabled: false\n  idleEnabled: false\n  autoContinue: false\n  keepRecentTokens: 0\n  methodOrder: [soft]\nretry:\n  enabled: false\n  modelFallback: false\n");
-		const launch = async (dir: string, work: string, history: boolean, resume?: string) => {
+		const launch = async (dir: string, work: string, history: boolean, resume?: string, extension = resolve(import.meta.dir, "../index.ts")) => {
 			const home = join(dir, "home");
 			await mkdir(home, { recursive: true });
 			const env: Record<string, string> = { HOME: home, XDG_CONFIG_HOME: join(home, "config"), XDG_DATA_HOME: join(home, "data"), XDG_STATE_HOME: join(home, "state"), XDG_CACHE_HOME: join(home, "cache"), PI_CODING_AGENT_DIR: join(home, ".omp/agent"), PI_PROFILE: "", OMP_PROFILE: "", OPENROUTER_API_KEY: "", OMP_AUTH_BROKER_URL: broker!.url, OMP_AUTH_BROKER_TOKEN: token, OMP_BENCH_CWD: work, OMP_BENCH_HISTORY: history ? "1" : "0", OMP_BENCH_COMPACTION: o.compaction, OMP_BENCH_STATUS_FILE: join(dir, "status.json") };
 			const args = ["--no-ui", "--no-extensions", "--no-rules", "--no-skills", "--no-title", "--no-lsp", "--no-pty", "--thinking", "low", "--smol", o.model, "--slow", o.model, "--plan", o.model, "--config", config, "--tools", "read,grep,glob", "--cwd", work, "-e", resolve(import.meta.dir, "control.ts")];
-			if (history) args.push("-e", resolve(import.meta.dir, "../index.ts"));
+			if (history) args.push("-e", extension);
 			if (resume) args.push("--resume", resume);
 			const c = new RpcClient({ command: ["omp"], cwd: work, env, model: o.model, sessionDir: join(dir, "sessions"), args });
 			clients.add(c);
@@ -100,27 +127,42 @@ async function main(o: Options) {
 		const prompt = async (c: RpcClient, text: string) => {
 			const m = emptyMetrics();
 			let failed: string | null = null;
-			const unsubscribeResult = c.onPromptResult(result => { if (result.status !== "completed") failed = "prompt_not_completed"; });
+			let lastSnapshot: string | undefined;
+			const unsubscribeResult = c.onPromptResult(result => { if (result.status !== "completed") failed ??= "prompt_not_completed"; });
 			const unsubscribe = c.onEvent(event => {
 				if (event.type === "message_end" && event.message.role === "assistant") {
 					const msg = event.message;
 					m.modelCalls++;
 					if (`${msg.provider}/${msg.model}` !== o.model) failed = "model_mismatch";
 					if (msg.usage) { addUsage(m, msg.usage); totalEstimatedCost += msg.usage.cost.total; }
-					for (const block of msg.content) if (block.type === "toolCall") { m.toolCalls++; m.tools[block.name] = (m.tools[block.name] ?? 0) + 1; }
+					for (const block of msg.content) if (block.type === "toolCall") {
+						m.toolCalls++; m.tools[block.name] = (m.tools[block.name] ?? 0) + 1;
+						if (block.name === "session_read" || block.name === "session_grep") {
+							for (const key of ["kind", "context_lines", "all_of", "line_count", "start_column", "char_count"]) if (block.arguments[key] === null) {
+								const label = `${block.name}.${key}`;
+								m.nullOptionalArguments[label] = (m.nullOptionalArguments[label] ?? 0) + 1;
+							}
+							if (block.name === "session_read") {
+								m.readSnapshotCopies[lastSnapshot === undefined ? "unknown" : block.arguments.snapshot === lastSnapshot ? "exact" : "different"]++;
+								const shape = readArgumentShape(block.arguments);
+								m.readArgumentShapes[shape] = (m.readArgumentShapes[shape] ?? 0) + 1;
+							}
+						}
+					}
 					if (m.toolCalls > 16 || m.modelCalls > 18 || totalEstimatedCost > 5 || failed) {
-						failed ??= "budget_exhausted";
+						failed ??= totalEstimatedCost > 5 ? "cost_budget_exhausted" : "phase_budget_exhausted";
 						void c.abort().catch(() => {});
 					}
 				}
 				if (event.type === "tool_execution_end") {
 					if (event.isError) {
 						m.toolErrors++;
-						const text = (event.result?.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("\n");
-						const category = text.includes("Session or transcript changed") ? "snapshot_changed" : text.includes("Invalid or stale history reference") ? "snapshot_invalid" : /[Ss]earch is too broad/.test(text) ? "search_budget" : /[Vv]alidation|[Ii]nvalid.*[Aa]rgument|[Ss]chema|[Ss]napshot|[Tt]oo (big|small)/.test(text) ? "argument_validation" : "other";
+						const category = classifyToolError(resultText(event.result));
 						m.errorCategories[category] = (m.errorCategories[category] ?? 0) + 1;
+						m.errorTools[event.toolName] = (m.errorTools[event.toolName] ?? 0) + 1;
 					}
 					for (const block of event.result?.content ?? []) if (block.type === "text") m.toolOutputBytes += Buffer.byteLength(block.text);
+					if (event.toolName === "session_grep" && !event.isError) lastSnapshot = resultText(event.result).match(/Snapshot: (v3:\d+:[a-f0-9]{64})/)?.[1];
 				}
 			});
 			const start = performance.now();
@@ -128,6 +170,8 @@ async function main(o: Options) {
 				await c.promptAndWait(text, undefined, o.timeoutSeconds * 1000);
 				if (failed) throw new Failure(failed);
 				return { metrics: m, answer: await c.getLastAssistantText() ?? "" };
+			} catch (error) {
+				throw new Failure(failed ?? (error instanceof Failure ? error.code : "phase_runtime_failure"), m);
 			} finally { m.elapsedMs = Math.round(performance.now() - start); unsubscribe(); unsubscribeResult(); }
 		};
 		for (let trial = 0; trial < o.trials; trial++) {
@@ -171,8 +215,13 @@ async function main(o: Options) {
 			row.compactedContextSha256 = contextHash;
 			row.eligible = true;
 			const arms = row.arms as Record<string, unknown>;
-			for (const history of trial % 2 === 0 ? [true, false] : [false, true]) {
-				const name = history ? "history" : "baseline";
+			const conditions = o.previousExtension
+				? [{ name: "baseline", extension: undefined }, { name: "previous_history", extension: o.previousExtension }, { name: "history", extension: resolve(import.meta.dir, "../index.ts") }]
+				: (trial % 2 === 0 ? [true, false] : [false, true]).map(history => ({ name: history ? "history" : "baseline", extension: history ? resolve(import.meta.dir, "../index.ts") : undefined }));
+			if (o.previousExtension) for (let i = 0; i < trial % 3; i++) conditions.push(conditions.shift()!);
+			row.armOrder = conditions.map(c => c.name);
+			for (const { name, extension } of conditions) {
+				const history = extension !== undefined;
 				console.log(`Trial ${trial + 1}/${o.trials}: ${name} follow-up`);
 				const dir = join(trialDir, name);
 				await mkdir(dir, { recursive: true });
@@ -181,11 +230,17 @@ async function main(o: Options) {
 				lines[0] = JSON.stringify(header);
 				const session = join(dir, "session.jsonl");
 				await writeFile(session, `${lines.join("\n")}\n`, { mode: 0o600 });
-				const arm = await launch(dir, work, history, session);
+				const arm = await launch(dir, work, history, session, extension);
 				const restored = await arm.c.getMessages();
 				if (digest(restored) !== contextHash || missingFacts(restored, data.gold).length !== keys.length) throw new Failure("restored_context_mismatch");
-				const result = await prompt(arm.c, data.question);
-				arms[name] = { ...result.metrics, score: score(result.answer, data.gold), activeTools: arm.status.activeTools };
+				try {
+					const result = await prompt(arm.c, data.question);
+					arms[name] = { ...result.metrics, completed: true, score: score(result.answer, data.gold), activeTools: arm.status.activeTools };
+				} catch (error) {
+					if (!(error instanceof Failure) || !error.metrics || error.code === "model_mismatch" || error.code === "cost_budget_exhausted") throw error;
+					arms[name] = { ...error.metrics, completed: false, failure: error.code, score: score("", data.gold), activeTools: arm.status.activeTools };
+				}
+
 				await arm.c.stop(); clients.delete(arm.c);
 				const unchanged = await Promise.all(Object.entries(data.files).map(async ([name, text]) => await readFile(join(work, name), "utf8") === text));
 				if (unchanged.some(equal => !equal)) throw new Failure("fixture_changed");
@@ -207,7 +262,7 @@ async function main(o: Options) {
 
 if (import.meta.main) {
 	try {
-		if (process.argv.includes("--help")) console.log("Usage: bun run bench --model provider/model [--trials 3] [--compaction controlled|natural] [--seed public-id] [--timeout-seconds 180] [--output report.json] (--dry-run | --allow-model-calls)\nSee bench/README.md for protocol, cost and safety caveats.");
+		if (process.argv.includes("--help")) console.log("Usage: bun run bench --model provider/model [--trials 3] [--compaction controlled|natural] [--seed public-id] [--timeout-seconds 180] [--output report.json] [--previous-extension path/index.ts] (--dry-run | --allow-model-calls)\nSee bench/README.md for protocol, cost and safety caveats.");
 		else await main(options(process.argv.slice(2)));
 	}
 	catch (error) {
